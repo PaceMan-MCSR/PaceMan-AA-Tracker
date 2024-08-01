@@ -36,7 +36,7 @@ public class AATrackerJarLaunch {
         }
         AATracker.VERSION = Optional.ofNullable(AATrackerJarLaunch.class.getPackage().getImplementationVersion()).orElse("DEV");
         AATracker.log("Running PaceMan AA Tracker v" + AATracker.VERSION);
-        AATracker.getInstance().start(false);
+        AATracker.start(false);
     }
 
     private static void checkLock() {

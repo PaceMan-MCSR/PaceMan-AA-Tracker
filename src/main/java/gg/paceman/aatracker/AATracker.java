@@ -1,6 +1,7 @@
 package gg.paceman.aatracker;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import gg.paceman.aatracker.util.ExceptionUtil;
@@ -11,38 +12,52 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The actual logic and stuff for the PaceMan AA Tracker
  */
 public class AATracker {
-    public static String VERSION = "Unknown"; // To be set dependent on launch method
-    private static final AATracker INSTANCE = new AATracker();
+    public static final String PACEMANGG_AA_SEND_ENDPOINT = "https://paceman.gg/api/aa/send";
+    public static final String PACEMANGG_AA_KILL_ENDPOINT = "https://paceman.gg/api/aa/kill";
+    private static final String PACEMANGG_TEST_ENDPOINT = "https://paceman.gg/api/test";
+    public static final Pattern RANDOM_WORLD_PATTERN = Pattern.compile("^Random Speedrun #\\d+$");
+    private static final int MIN_DENY_CODE = 400;
+    private static final Path GLOBAL_LATEST_WORLD_PATH = Paths.get(System.getProperty("user.home")).resolve("speedrunigt").resolve("latest_world.json").toAbsolutePath();
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    private static final Gson GSON = new Gson();
 
+    public static String VERSION = "Unknown"; // To be set dependent on launch method
     public static Consumer<String> logConsumer = System.out::println;
     public static Consumer<String> debugConsumer = System.out::println;
     public static Consumer<String> errorConsumer = System.out::println;
     public static Consumer<String> warningConsumer = System.out::println;
+    private static boolean asPlugin;
 
 
-    public static final String PACEMANGG_AA_ENDPOINT = "https://paceman.gg/api/sendaa";
-    private static final String PACEMANGG_TEST_ENDPOINT = "https://paceman.gg/api/test";
-    private static final int MIN_DENY_CODE = 400;
+    // Stuff that changes over the course of tick()
+    private static long lastLatestWorldMTime = 0;
+    private static Optional<JsonObject> latestWorld = Optional.empty();
+    private static long lastRecordMTime = 0;
+    private static long lastEventsMTime = 0;
+    private static Optional<List<String>> events = Optional.empty();
+    private static Optional<JsonObject> lastSend = Optional.empty();
 
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private boolean asPlugin;
+    private static boolean runOnPaceMan = false;
 
-    public static AATracker getInstance() {
-        return INSTANCE;
+    private AATracker() {
     }
 
     public static void log(String message) {
@@ -126,7 +141,6 @@ public class AATracker {
         return true;
     }
 
-
     private static boolean areNewAtumSettingsGood(Path atumJsonPath) throws IOException, JsonSyntaxException {
         String atumJsonText = new String(Files.readAllBytes(atumJsonPath));
         JsonObject json = new Gson().fromJson(atumJsonText, JsonObject.class);
@@ -202,49 +216,213 @@ public class AATracker {
         return new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
     }
 
-    private boolean shouldRun() {
-        AATrackerOptions options = AATrackerOptions.getInstance();
-        if (options.accessKey.isEmpty()) {
-            return false;
-        }
-        return !this.asPlugin || options.enabledForPlugin;
-    }
-
-    public void start(boolean asPlugin) {
-        this.asPlugin = asPlugin;
+    public static void start(boolean asPlugin) {
+        AATracker.asPlugin = asPlugin;
         // Run tick every 1 second
-        this.executor.scheduleAtFixedRate(this::tryTick, 0, 1, TimeUnit.SECONDS);
+        EXECUTOR.scheduleAtFixedRate(AATracker::tryTick, 0, 5, TimeUnit.SECONDS);
     }
 
-    private void tryTick() {
+    private static void tryTick() {
         try {
             Thread.currentThread().setName("paceman-aa-tracker");
-            this.tick();
+            AATracker.tick();
         } catch (Throwable t) {
-            if (!this.asPlugin) {
+            if (!AATracker.asPlugin) {
                 ExceptionUtil.showExceptionAndExit(t, "PaceMan AA Tracker has crashed! Please report this bug to the developers.\n" + t);
             } else {
                 String detailedString = ExceptionUtil.toDetailedString(t);
                 AATracker.logError("PaceMan AA Tracker has crashed! Please report this bug to the developers. " + detailedString);
                 AATracker.logError("PaceMan AA Tracker will now shutdown, Julti will need to be restarted to use PaceMan AA Tracker.");
-                this.stop();
+                AATracker.stop();
             }
         }
     }
 
-    private void tick() {
-    }
-
-    public void stop() {
+    public static void stop() {
         try {
             // Wait for and shutdown executor
-            this.executor.shutdownNow();
-            this.executor.awaitTermination(10, TimeUnit.SECONDS);
+            AATracker.EXECUTOR.shutdownNow();
+            AATracker.EXECUTOR.awaitTermination(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         // Do cleanup
+    }
+
+    private static void tick() throws IOException {
+        if (!shouldRun()) return;
+
+        checkLatestWorld();
+
+        if (!latestWorld.isPresent()) // only present if a Random Speedrun, AA category, valid atum settings, latest_world.json exists
+            return;
+
+        Path speedrunigtPath = getWorldPath().get().resolve("speedrunigt");
+        Path recordPath = speedrunigtPath.resolve("record.json");
+        Path eventsPath = speedrunigtPath.resolve("events.log");
+
+        if (!Files.exists(recordPath) || !Files.exists(eventsPath)) return;
+
+        long newRecordMTime = Files.getLastModifiedTime(recordPath).toMillis();
+        long newEventsMTime = Files.getLastModifiedTime(eventsPath).toMillis();
+
+        boolean recordFileModified = newRecordMTime != lastRecordMTime;
+        boolean eventsFileModified = newEventsMTime != lastEventsMTime;
+
+        if (!recordFileModified && !eventsFileModified) return;
+
+        lastEventsMTime = newEventsMTime;
+        lastRecordMTime = newRecordMTime;
+
+        if (eventsFileModified) {
+            updateEvents();
+        }
+
+        if (!events.isPresent() || events.get().isEmpty()) return;
+
+        if (hasEvilEvents()) {
+            killIfOnPaceman();
+        }
+
+        JsonObject record;
+        try {
+            record = GSON.fromJson(new String(Files.readAllBytes(recordPath)), JsonObject.class);
+        } catch (Throwable t) {
+            logError("Error reading record file: " + ExceptionUtil.toDetailedString(t));
+            return;
+        }
+
+
+        JsonArray completed = new JsonArray();
+        JsonArray timelines = record.getAsJsonArray("timelines");
+
+        JsonObject advancements = record.getAsJsonObject("advancements");
+        for (String advancementName : advancements.keySet()) {
+            JsonObject advancement = advancements.getAsJsonObject(advancementName);
+            if (advancement.has("complete") && advancement.get("complete").getAsBoolean() && advancement.has("is_advancement") && advancement.get("is_advancement").getAsBoolean()) {
+                completed.add(advancementName.startsWith("minecraft:") ? advancementName.substring(10) : advancementName);
+            }
+        }
+
+        
+    }
+
+    private static boolean hasEvilEvents() {
+        assert events.isPresent();
+        return events.get().stream().anyMatch(s -> s.startsWith("common.multiplayer") || s.startsWith("common.view_seed") || s.startsWith("common.enable_cheats") || s.startsWith("common.old_world"));
+    }
+
+    private static void killIfOnPaceman() {
+        if (runOnPaceMan) {
+            sendKill();
+        }
+    }
+
+    private static void sendKill() {
+        try {
+            sendData(PACEMANGG_AA_KILL_ENDPOINT, String.format("{\"accessKey\":\"%s\"}", AATrackerOptions.getInstance().accessKey));
+        } catch (IOException e) {
+            logError("Failed to kill run: " + ExceptionUtil.toDetailedString(e));
+        }
+        runOnPaceMan = false;
+    }
+
+    private static void updateEvents() {
+        assert latestWorld.isPresent();
+
+        events = Optional.empty();
+        try {
+            Path eventsLogPath = getWorldPath().get().resolve("speedrunigt").resolve("events.log");
+            if (Files.exists(eventsLogPath)) {
+                events = Optional.of(Files.readAllLines(eventsLogPath).stream().map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
+            }
+        } catch (Exception e) {
+            logError("Error while reading events.log: " + ExceptionUtil.toDetailedString(e));
+        }
+    }
+
+    private static String getWorldId() {
+        assert latestWorld.isPresent();
+        assert events.isPresent();
+        assert !events.get().isEmpty();
+
+        String firstEvent = events.get().get(0);
+        String[] parts = firstEvent.split(" ");
+        String worldUniquifier;
+        switch (parts.length) {
+            case 3: // should always be this
+                worldUniquifier = ";" + parts[0] + ";" + parts[1] + ";" + parts[2];
+                break;
+            case 2:
+                logWarning("Event log contained only 2 parts for an event line! \"" + firstEvent + "\"");
+                worldUniquifier = ";" + parts[0] + ";" + parts[1];
+                break;
+            default:
+                logWarning("Event log contained a strange number of parts for an event line! \"" + firstEvent + "\"");
+                worldUniquifier = ";" + parts[0];
+                break;
+        }
+        return sha256Hash(getWorldPath().get() + worldUniquifier);
+    }
+
+    private static Optional<Path> getWorldPath() {
+        return latestWorld.map(json -> Paths.get(json.get("world_path").getAsString()).toAbsolutePath());
+    }
+
+    private static void checkLatestWorld() throws IOException {
+        if (!Files.exists(GLOBAL_LATEST_WORLD_PATH)) {
+            latestWorld = Optional.empty();
+            return;
+        }
+        long newMTime = Files.getLastModifiedTime(GLOBAL_LATEST_WORLD_PATH).toMillis();
+        if (newMTime != lastLatestWorldMTime) {
+            Optional<JsonObject> lastLatestWorld = latestWorld;
+            // Clear stuff
+            latestWorld = Optional.empty();
+            lastLatestWorldMTime = newMTime;
+
+            // Read and parse
+            JsonObject json;
+            try {
+                json = GSON.fromJson(new String(Files.readAllBytes(GLOBAL_LATEST_WORLD_PATH)), JsonObject.class);
+            } catch (Throwable t) {
+                logError("Failed to read latest_world.json: " + ExceptionUtil.toDetailedString(t));
+                return;
+            }
+
+            // Check everything is there
+            if (!Stream.of("version", "mod_version", "category", "mods", "world_path").allMatch(json::has)) return;
+
+            // Check for random speedrun #x, AA cat, and atum settings
+            Path worldPath = Paths.get(json.get("world_path").getAsString());
+            if (!RANDOM_WORLD_PATTERN.matcher(worldPath.getFileName().toString()).matches())
+                return;
+            if (!json.get("category").getAsString().equals("ALL_ADVANCEMENTS")) return;
+            if (!areAtumSettingsGood(worldPath)) return;
+
+            Path recordPath = worldPath.resolve("speedrunigt").resolve("record.json");
+            Path eventsPath = worldPath.resolve("speedrunigt").resolve("events.log");
+            if (!Files.exists(recordPath)) return;
+            if (!Files.exists(eventsPath)) return;
+
+            // If world path changes, set MTimes
+            if (!lastLatestWorld.isPresent() || (!Objects.equals(lastLatestWorld.get().get("world_path"), json.get("world_path")))) {
+                killIfOnPaceman();
+                lastRecordMTime = Files.getLastModifiedTime(recordPath).toMillis();
+                lastEventsMTime = Files.getLastModifiedTime(eventsPath).toMillis();
+            }
+
+            latestWorld = Optional.of(json); // This latest world is pointing to valid stuff
+        }
+    }
+
+    private static boolean shouldRun() {
+        AATrackerOptions options = AATrackerOptions.getInstance();
+        if (options.accessKey.isEmpty()) {
+            return false;
+        }
+        return !AATracker.asPlugin || options.enabledForPlugin;
     }
 
     public static class PostResponse {

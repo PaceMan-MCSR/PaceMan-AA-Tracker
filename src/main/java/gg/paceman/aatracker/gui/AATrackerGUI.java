@@ -165,7 +165,7 @@ public class AATrackerGUI extends JFrame {
     private void onClose() {
         // If not running as plugin, closing the GUI should stop the tracker.
         if (!this.asPlugin) {
-            AATracker.getInstance().stop();
+            AATracker.stop();
         }
         this.closed = true;
     }

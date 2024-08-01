@@ -43,6 +43,7 @@ public class AATrackerOptions {
                 JsonObject json = GSON.fromJson(new String(Files.readAllBytes(path)), JsonObject.class);
                 if (json.has("accessKey")) {
                     instance.accessKey = json.get("accessKey").getAsString();
+                    AATracker.log("Access key yoinked from regular tracker options!");
                 }
             }
         } catch (Exception ignored) {

@@ -79,10 +79,9 @@ public class AATrackerPluginInit implements PluginInitializer {
             AATracker.VERSION = version.equals("${version}") ? "DEV" : version;
             AATracker.log("Loaded PaceMan AA Tracker v" + AATracker.VERSION);
         }
-        AATracker tracker = AATracker.getInstance();
-        tracker.start(true);
-        PluginEvents.RunnableEventType.STOP.register(tracker::stop);
-        PluginEvents.RunnableEventType.PRE_UPDATE.register(tracker::stop);
+        AATracker.start(true);
+        PluginEvents.RunnableEventType.STOP.register(AATracker::stop);
+        PluginEvents.RunnableEventType.PRE_UPDATE.register(AATracker::stop);
     }
 
     @Override

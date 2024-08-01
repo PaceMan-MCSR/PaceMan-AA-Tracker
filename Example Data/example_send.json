@@ -1,0 +1,53 @@
+{
+  "gameVersion": "1.16.1",
+  "modVersion": "14.2+1.16.1",
+  "aaTrackerVersion": "0.1.0",
+  "modList": [
+    "atum",
+    "speedrunigt"
+  ],
+  "worldId": "xlkmc0qw9casinfw0cmmzxc",
+  "completed": [
+    "story/follow_ender_eye",
+    "nether/get_wither_skull"
+  ],
+  "timelines": [
+    {
+      "name": "found_villager",
+      "igt": 85550,
+      "rta": 87606
+    },
+    {
+      "name": "enter_nether",
+      "igt": 211600,
+      "rta": 213660
+    }
+  ],
+  "eventList": [
+    "common.multiplayer 9461347295 20061869",
+    "common.enable_cheats 9461348662 20061869",
+    "rsg.obtain_iron_pickaxe 9461348690 20061911",
+    "rsg.obtain_obsidian 9461348690 20061911",
+    "rsg.obtain_lava_bucket 9461348690 20061911",
+    "rsg.enter_end 9461348691 20061911",
+    "rsg.kill_dragon 9461368133 20078461",
+    "common.leave_world 9461535032 20243961"
+  ],
+  "criterias": {
+    "biomes": [
+      "plains",
+      "river",
+      "mushroom_fields"
+    ],
+    "monstersKilled": [
+      "blaze",
+      "creeper",
+      "drowned"
+    ],
+    "animalsBred": [
+      "cow",
+      "horse",
+      "sheep"
+    ]
+  }
+}
