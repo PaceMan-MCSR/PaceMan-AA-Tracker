@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'idea'
+}
+
+group = project.maven_group
+version = project.version
+archivesBaseName = project.archives_base_name
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url "https://www.jetbrains.com/intellij-repository/releases" }
+    maven { url "https://maven.fabricmc.net/" }
+}
+
+configurations {
+    // provided configuration defines configurations which should also be included in the jar
+    provided
+    implementation.extendsFrom(provided)
+}
+
+dependencies {
+    // Choose Julti version: https://jitpack.io/#DuncanRuns/Julti/
+    implementation 'com.github.DuncanRuns:Julti:40c2160a68'
+
+    provided 'com.jetbrains.intellij.java:java-gui-forms-rt:203.7148.30'
+    provided 'com.google.code.gson:gson:2.10'
+    provided 'com.formdev:flatlaf:3.0'
+    provided 'org.kohsuke:github-api:1.318'
+}
+
+
+processResources {
+    // Totally stolen from Fabric
+    inputs.property "version", project.version
+
+    filesMatching("julti.plugin.json") {
+        expand "version": project.version
+    }
+}
+
+jar {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    manifest {
+        attributes 'Main-Class': 'gg.paceman.aatracker.launching.AATrackerJarLaunch',
+                'Multi-Release': true,
+                'Implementation-Version': version
+    }
+
+    // Include dependencies marked as provided
+    from configurations.provided.asFileTree.files.collect { zipTree(it) }
+    // Main jar is not a plugin
+    exclude "julti.plugin.json"
+}
+
+task pluginJar(type: Jar) {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    archiveBaseName = "${project.archives_base_name}-plugin"
+    from sourceSets.main.output
+}
+
+artifacts {
+    archives pluginJar
+}

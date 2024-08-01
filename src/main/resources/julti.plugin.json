@@ -1,0 +1,6 @@
+{
+  "name": "PaceMan AA Tracker",
+  "id": "paceman-aa-tracker",
+  "version": "${version}",
+  "initializer": "gg.paceman.aatracker.launching.AATrackerPluginInit"
+}
