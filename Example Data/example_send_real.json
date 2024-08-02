@@ -1,0 +1,62 @@
+{
+  "gameVersion": "1.16.1",
+  "modVersion": "14.2",
+  "aaTrackerVersion": "unspecified",
+  "worldId": "f3327f66b1bfbafc702affe1c268c5f3ea8e366936fa784b61421459075b63e2",
+  "modList": [
+    "antigone",
+    "antiresourcereload",
+    "atum",
+    "chunkumulator",
+    "fabricloader",
+    "fast_reset",
+    "forceport",
+    "java",
+    "krypton",
+    "lazydfu",
+    "lazystronghold",
+    "lithium",
+    "minecraft",
+    "mixinextras",
+    "sleepbackground",
+    "sodium",
+    "speedrunigt",
+    "standardsettings",
+    "starlight",
+    "state-output",
+    "state-output-common",
+    "voyager",
+    "worldpreview"
+  ],
+  "completed": [
+    "adventure/kill_a_mob",
+    "adventure/root",
+    "nether/root",
+    "story/enter_the_nether",
+    "story/iron_tools",
+    "story/lava_bucket",
+    "story/mine_diamond",
+    "story/mine_stone",
+    "story/root",
+    "story/smelt_iron"
+  ],
+  "timelines": [
+    {
+      "name": "enter_nether",
+      "igt": 105497,
+      "rta": 110371
+    }
+  ],
+  "criterias": {
+    "biomes": [
+      "beach",
+      "deep_cold_ocean",
+      "forest"
+    ],
+    "monstersKilled": [
+      "enderman",
+      "magma_cube"
+    ],
+    "animalsBred": []
+  }
+}

@@ -1,9 +1,6 @@
 package gg.paceman.aatracker;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 import gg.paceman.aatracker.util.ExceptionUtil;
 
 import javax.annotation.Nullable;
@@ -57,7 +54,7 @@ public class AATracker {
     private static long lastRecordMTime = 0;
     private static long lastEventsMTime = 0;
     private static List<String> events = Collections.emptyList();
-    private static @Nullable JsonObject lastSend = null;
+    private static String lastSend = "";
 
     private static boolean runOnPaceMan = false;
     private static boolean runKilledOrEnded = false;
@@ -305,7 +302,7 @@ public class AATracker {
         JsonArray timelines = record.getAsJsonArray("timelines");
 
         JsonObject advancements = record.getAsJsonObject("advancements");
-        for (String advancementName : advancements.keySet()) {
+        for (String advancementName : advancements.keySet().stream().sorted().collect(Collectors.toList())) {
             JsonObject advancement = advancements.getAsJsonObject(advancementName);
             if (advancement.has("complete") && advancement.get("complete").getAsBoolean() && advancement.has("is_advancement") && advancement.get("is_advancement").getAsBoolean()) {
                 completed.add(advancementName.startsWith("minecraft:") ? advancementName.substring(10) : advancementName);
@@ -317,13 +314,13 @@ public class AATracker {
         JsonArray monstersKilled = new JsonArray();
         JsonArray animalsBred = new JsonArray();
         if (advancements.has("minecraft:adventure/adventuring_time")) {
-            advancements.getAsJsonObject("minecraft:adventure/adventuring_time").keySet().forEach(s -> biomes.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+            advancements.getAsJsonObject("minecraft:adventure/adventuring_time").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> biomes.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
         if (advancements.has("minecraft:adventure/kill_all_mobs")) {
-            advancements.getAsJsonObject("minecraft:adventure/kill_all_mobs").keySet().forEach(s -> monstersKilled.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+            advancements.getAsJsonObject("minecraft:adventure/kill_all_mobs").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> monstersKilled.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
         if (advancements.has("minecraft:husbandry/bred_all_animals")) {
-            advancements.getAsJsonObject("minecraft:husbandry/bred_all_animals").keySet().forEach(s -> animalsBred.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+            advancements.getAsJsonObject("minecraft:husbandry/bred_all_animals").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> animalsBred.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
         criterias.add("biomes", biomes);
         criterias.add("monstersKilled", monstersKilled);
@@ -334,23 +331,32 @@ public class AATracker {
         toSend.addProperty("gameVersion", latestWorld.get("version").getAsString());
         toSend.addProperty("modVersion", latestWorld.get("mod_version").getAsString().split("\\+")[0]);
         toSend.addProperty("aaTrackerVersion", VERSION.startsWith("v") ? VERSION.substring(1) : VERSION);
-        JsonArray modList = latestWorld.get("mods").getAsJsonArray();
+        JsonArray modList = new JsonArray();
+        latestWorld.getAsJsonArray("mods").asList().stream().map(JsonElement::getAsString).sorted().forEach(modList::add);
         toSend.addProperty("worldId", getWorldId());
         toSend.add("modList", modList);
         toSend.add("completed", completed);
         toSend.add("timelines", timelines);
         JsonArray eventList = new JsonArray(events.size());
         events.forEach(eventList::add);
+        toSend.add("eventList", eventList);
         toSend.add("criterias", criterias);
 
-        logDebug("Sending Exactly (access key hidden):\n" + toSend);
+        String toSendStringNoAK = toSend.toString();
+        if (Objects.equals(lastSend, toSendStringNoAK)) {
+            logDebug("Something updated but no changes found!");
+            return;
+        }
+        lastSend = toSendStringNoAK;
+
+        logDebug("Sending Exactly (access key hidden):\n" + toSendStringNoAK);
 
         toSend.addProperty("accessKey", AATrackerOptions.getInstance().accessKey);
 
-        if(ACTUALLY_SEND){
+        if (ACTUALLY_SEND) {
             try {
                 PostResponse response = sendData(PACEMANGG_AA_SEND_ENDPOINT, toSend.toString());
-            }catch (Exception e){
+            } catch (Exception e) {
                 logError("Error during burger");
             }
         }
