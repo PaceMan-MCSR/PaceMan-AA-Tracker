@@ -2,11 +2,10 @@ package gg.paceman.aatracker;
 
 import com.google.gson.*;
 import gg.paceman.aatracker.util.ExceptionUtil;
+import gg.paceman.aatracker.util.PostUtil;
 
 import javax.annotation.Nullable;
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +37,7 @@ public class AATracker {
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private static final Gson GSON = new Gson();
 
-    private static final boolean ACTUALLY_SEND = false;
+    private static final boolean ACTUALLY_SEND = true;
 
     public static String VERSION = "Unknown"; // To be set dependent on launch method
     public static Consumer<String> logConsumer = System.out::println;
@@ -172,50 +171,14 @@ public class AATracker {
         }
     }
 
-    public static PostResponse sendData(String endpointUrl, String jsonData) throws IOException {
-        // Create URL object
-        URL url = new URL(endpointUrl);
-        HttpURLConnection connection = null;
-        try {
-            // Open connection
-            connection = (HttpURLConnection) url.openConnection();
-
-            // Set the necessary properties
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setDoOutput(true);
-
-            // Write JSON data to the connection output stream
-            try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = jsonData.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
-            int responseCode = connection.getResponseCode();
-            String message = responseCode >= 400 ? AATracker.readStream(connection.getErrorStream()) : connection.getResponseMessage();
-
-
-            // Return the response code
-            return new PostResponse(responseCode, message);
-        } finally {
-            // Close the connection
-            if (connection != null) {
-                connection.disconnect();
-            }
-        }
-    }
-
-    public static PostResponse testAccessKey(String accessKey) {
+    public static PostUtil.PostResponse testAccessKey(String accessKey) {
         JsonObject testModelInput = new JsonObject();
         testModelInput.addProperty("accessKey", accessKey);
         try {
-            return AATracker.sendData(PACEMANGG_TEST_ENDPOINT, testModelInput.toString());
+            return PostUtil.sendData(PACEMANGG_TEST_ENDPOINT, testModelInput.toString());
         } catch (IOException e) {
             return null;
         }
-    }
-
-    private static String readStream(InputStream inputStream) {
-        return new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
     }
 
     public static void start(boolean asPlugin) {
@@ -356,7 +319,7 @@ public class AATracker {
 
         if (ACTUALLY_SEND) {
             try {
-                PostResponse response = sendData(PACEMANGG_AA_SEND_ENDPOINT, toSend.toString());
+                PostUtil.PostResponse response = PostUtil.sendData(PACEMANGG_AA_SEND_ENDPOINT, toSend.toString());
                 if (response.code < 400) {
                     runOnPaceMan = true;
                     log("Run updated on PaceMan.gg!");
@@ -382,7 +345,7 @@ public class AATracker {
     private static void endRun() {
         if (runOnPaceMan) {
             try {
-                sendData(PACEMANGG_AA_KILL_ENDPOINT, String.format("{\"accessKey\":\"%s\"}", AATrackerOptions.getInstance().accessKey));
+                PostUtil.sendData(PACEMANGG_AA_KILL_ENDPOINT, String.format("{\"accessKey\":\"%s\"}", AATrackerOptions.getInstance().accessKey));
             } catch (IOException e) {
                 logError("Failed to kill run: " + ExceptionUtil.toDetailedString(e));
             }
@@ -488,13 +451,4 @@ public class AATracker {
         return !AATracker.asPlugin || options.enabledForPlugin;
     }
 
-    public static class PostResponse {
-        public final int code;
-        public final String message;
-
-        private PostResponse(int code, String message) {
-            this.code = code;
-            this.message = message;
-        }
-    }
 }

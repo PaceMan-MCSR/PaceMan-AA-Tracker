@@ -118,7 +118,7 @@ public class AATrackerGUI extends JFrame {
             return;
         }
 
-        AATracker.PostResponse response = AATracker.testAccessKey(options.accessKey);
+        PostUtil.PostResponse response = AATracker.testAccessKey(options.accessKey);
         if (response == null || response.code >= 300) {
             onFailure.accept(response == null ? "Access key is not valid! (no response)" : "Access key is not valid! (" + response.code + ": " + response.message + ")");
             return;
