@@ -29,12 +29,12 @@ public class AATrackerJarLaunch {
             AATrackerJarLaunch.checkLock();
         }
 
+        AATracker.VERSION = Optional.ofNullable(AATrackerJarLaunch.class.getPackage().getImplementationVersion()).orElse("DEV");
         AATrackerOptions.load().save();
         if (!AATrackerJarLaunch.args.contains("--nogui")) {
             AATrackerGUI gui = AATrackerGUI.open(false, null);
             gui.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         }
-        AATracker.VERSION = Optional.ofNullable(AATrackerJarLaunch.class.getPackage().getImplementationVersion()).orElse("DEV");
         AATracker.log("Running PaceMan AA Tracker v" + AATracker.VERSION);
         AATracker.start(false);
     }

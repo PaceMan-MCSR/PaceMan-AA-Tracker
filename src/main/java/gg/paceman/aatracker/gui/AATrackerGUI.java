@@ -28,7 +28,7 @@ public class AATrackerGUI extends JFrame {
     private final boolean asPlugin;
 
     public AATrackerGUI(boolean asPlugin) {
-        this.setTitle("PaceMan AA Tracker");
+        this.setTitle("PaceMan AA Tracker v"+AATracker.VERSION);
         this.asPlugin = asPlugin;
 
         this.setContentPane(this.mainPanel);
