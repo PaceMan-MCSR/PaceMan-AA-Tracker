@@ -359,11 +359,14 @@ public class AATracker {
                 PostResponse response = sendData(PACEMANGG_AA_SEND_ENDPOINT, toSend.toString());
                 if (response.code < 400) {
                     runOnPaceMan = true;
+                    log("Run updated on PaceMan.gg!");
                 } else {
                     logError("Failed to send to PaceMan.gg: " + response.message);
+                    endRun();
                 }
-            } catch (Exception e) {
-                logError("Error during burger");
+            } catch (Throwable t) {
+                logError("Error during paceman.gg sending:\n" + ExceptionUtil.toDetailedString(t));
+                endRun();
             }
         }
     }
