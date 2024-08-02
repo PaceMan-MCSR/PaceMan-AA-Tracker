@@ -328,6 +328,7 @@ public class AATracker {
 
         JsonObject toSend = new JsonObject();
 
+        toSend.addProperty("lastRecordModified", lastRecordMTime);
         toSend.addProperty("gameVersion", latestWorld.get("version").getAsString());
         toSend.addProperty("modVersion", latestWorld.get("mod_version").getAsString().split("\\+")[0]);
         toSend.addProperty("aaTrackerVersion", VERSION.startsWith("v") ? VERSION.substring(1) : VERSION);
@@ -356,6 +357,11 @@ public class AATracker {
         if (ACTUALLY_SEND) {
             try {
                 PostResponse response = sendData(PACEMANGG_AA_SEND_ENDPOINT, toSend.toString());
+                if (response.code < 400) {
+                    runOnPaceMan = true;
+                } else {
+                    logError("Failed to send to PaceMan.gg: " + response.message);
+                }
             } catch (Exception e) {
                 logError("Error during burger");
             }
@@ -480,20 +486,12 @@ public class AATracker {
     }
 
     public static class PostResponse {
-        private final int code;
-        private final String message;
+        public final int code;
+        public final String message;
 
         private PostResponse(int code, String message) {
             this.code = code;
             this.message = message;
-        }
-
-        public int getCode() {
-            return this.code;
-        }
-
-        public String getMessage() {
-            return this.message;
         }
     }
 }
