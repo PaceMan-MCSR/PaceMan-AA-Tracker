@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import gg.paceman.aatracker.util.ExceptionUtil;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -15,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,6 +41,8 @@ public class AATracker {
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private static final Gson GSON = new Gson();
 
+    private static final boolean ACTUALLY_SEND = false;
+
     public static String VERSION = "Unknown"; // To be set dependent on launch method
     public static Consumer<String> logConsumer = System.out::println;
     public static Consumer<String> debugConsumer = System.out::println;
@@ -49,13 +53,14 @@ public class AATracker {
 
     // Stuff that changes over the course of tick()
     private static long lastLatestWorldMTime = 0;
-    private static Optional<JsonObject> latestWorld = Optional.empty();
+    private static @Nullable JsonObject latestWorld = null;
     private static long lastRecordMTime = 0;
     private static long lastEventsMTime = 0;
-    private static Optional<List<String>> events = Optional.empty();
-    private static Optional<JsonObject> lastSend = Optional.empty();
+    private static List<String> events = Collections.emptyList();
+    private static @Nullable JsonObject lastSend = null;
 
     private static boolean runOnPaceMan = false;
+    private static boolean runKilledOrEnded = false;
 
     private AATracker() {
     }
@@ -255,8 +260,12 @@ public class AATracker {
 
         checkLatestWorld();
 
-        if (!latestWorld.isPresent()) // only present if a Random Speedrun, AA category, valid atum settings, latest_world.json exists
+        if (latestWorld == null) { // only present if a Random Speedrun, AA category, valid atum settings, latest_world.json exists
+            endRun();
             return;
+        }
+
+        if (runKilledOrEnded) return;
 
         Path speedrunigtPath = getWorldPath().get().resolve("speedrunigt");
         Path recordPath = speedrunigtPath.resolve("record.json");
@@ -279,11 +288,9 @@ public class AATracker {
             updateEvents();
         }
 
-        if (!events.isPresent() || events.get().isEmpty()) return;
-
-        if (hasEvilEvents()) {
-            killIfOnPaceman();
-        }
+        if (events.isEmpty()) return;
+        if (hasEvilEvents()) endRun();
+        if (!hasNetherEnter()) return;
 
         JsonObject record;
         try {
@@ -305,37 +312,78 @@ public class AATracker {
             }
         }
 
-        
+        JsonObject criterias = new JsonObject();
+        JsonArray biomes = new JsonArray();
+        JsonArray monstersKilled = new JsonArray();
+        JsonArray animalsBred = new JsonArray();
+        if (advancements.has("minecraft:adventure/adventuring_time")) {
+            advancements.getAsJsonObject("minecraft:adventure/adventuring_time").keySet().forEach(s -> biomes.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+        }
+        if (advancements.has("minecraft:adventure/kill_all_mobs")) {
+            advancements.getAsJsonObject("minecraft:adventure/kill_all_mobs").keySet().forEach(s -> monstersKilled.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+        }
+        if (advancements.has("minecraft:husbandry/bred_all_animals")) {
+            advancements.getAsJsonObject("minecraft:husbandry/bred_all_animals").keySet().forEach(s -> animalsBred.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+        }
+        criterias.add("biomes", biomes);
+        criterias.add("monstersKilled", monstersKilled);
+        criterias.add("animalsBred", animalsBred);
+
+        JsonObject toSend = new JsonObject();
+
+        toSend.addProperty("gameVersion", latestWorld.get("version").getAsString());
+        toSend.addProperty("modVersion", latestWorld.get("mod_version").getAsString().split("\\+")[0]);
+        toSend.addProperty("aaTrackerVersion", VERSION.startsWith("v") ? VERSION.substring(1) : VERSION);
+        JsonArray modList = latestWorld.get("mods").getAsJsonArray();
+        toSend.addProperty("worldId", getWorldId());
+        toSend.add("modList", modList);
+        toSend.add("completed", completed);
+        toSend.add("timelines", timelines);
+        JsonArray eventList = new JsonArray(events.size());
+        events.forEach(eventList::add);
+        toSend.add("criterias", criterias);
+
+        logDebug("Sending Exactly (access key hidden):\n" + toSend);
+
+        toSend.addProperty("accessKey", AATrackerOptions.getInstance().accessKey);
+
+        if(ACTUALLY_SEND){
+            try {
+                PostResponse response = sendData(PACEMANGG_AA_SEND_ENDPOINT, toSend.toString());
+            }catch (Exception e){
+                logError("Error during burger");
+            }
+        }
+    }
+
+    private static boolean hasNetherEnter() {
+        return events.stream().anyMatch(s -> s.startsWith("rsg.enter_nether"));
     }
 
     private static boolean hasEvilEvents() {
-        assert events.isPresent();
-        return events.get().stream().anyMatch(s -> s.startsWith("common.multiplayer") || s.startsWith("common.view_seed") || s.startsWith("common.enable_cheats") || s.startsWith("common.old_world"));
+        return events.stream().anyMatch(s -> s.startsWith("common.multiplayer") || s.startsWith("common.view_seed") || s.startsWith("common.enable_cheats") || s.startsWith("common.old_world"));
     }
 
-    private static void killIfOnPaceman() {
+    private static void endRun() {
         if (runOnPaceMan) {
-            sendKill();
+            try {
+                sendData(PACEMANGG_AA_KILL_ENDPOINT, String.format("{\"accessKey\":\"%s\"}", AATrackerOptions.getInstance().accessKey));
+            } catch (IOException e) {
+                logError("Failed to kill run: " + ExceptionUtil.toDetailedString(e));
+            }
+            runOnPaceMan = false;
         }
-    }
-
-    private static void sendKill() {
-        try {
-            sendData(PACEMANGG_AA_KILL_ENDPOINT, String.format("{\"accessKey\":\"%s\"}", AATrackerOptions.getInstance().accessKey));
-        } catch (IOException e) {
-            logError("Failed to kill run: " + ExceptionUtil.toDetailedString(e));
-        }
-        runOnPaceMan = false;
+        runKilledOrEnded = true;
     }
 
     private static void updateEvents() {
-        assert latestWorld.isPresent();
+        assert latestWorld != null;
 
-        events = Optional.empty();
+        events = Collections.emptyList();
         try {
             Path eventsLogPath = getWorldPath().get().resolve("speedrunigt").resolve("events.log");
             if (Files.exists(eventsLogPath)) {
-                events = Optional.of(Files.readAllLines(eventsLogPath).stream().map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
+                events = Files.readAllLines(eventsLogPath).stream().map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
             }
         } catch (Exception e) {
             logError("Error while reading events.log: " + ExceptionUtil.toDetailedString(e));
@@ -343,11 +391,10 @@ public class AATracker {
     }
 
     private static String getWorldId() {
-        assert latestWorld.isPresent();
-        assert events.isPresent();
-        assert !events.get().isEmpty();
+        assert latestWorld != null;
+        assert !events.isEmpty();
 
-        String firstEvent = events.get().get(0);
+        String firstEvent = events.get(0);
         String[] parts = firstEvent.split(" ");
         String worldUniquifier;
         switch (parts.length) {
@@ -367,20 +414,20 @@ public class AATracker {
     }
 
     private static Optional<Path> getWorldPath() {
-        return latestWorld.map(json -> Paths.get(json.get("world_path").getAsString()).toAbsolutePath());
+        return Optional.ofNullable(latestWorld).map(json -> Paths.get(json.get("world_path").getAsString()).toAbsolutePath());
     }
 
     private static void checkLatestWorld() throws IOException {
         if (!Files.exists(GLOBAL_LATEST_WORLD_PATH)) {
-            latestWorld = Optional.empty();
+            latestWorld = null;
             return;
         }
         long newMTime = Files.getLastModifiedTime(GLOBAL_LATEST_WORLD_PATH).toMillis();
         if (newMTime != lastLatestWorldMTime) {
-            Optional<JsonObject> lastLatestWorld = latestWorld;
+            @Nullable JsonObject lastLatestWorld = latestWorld;
             // Clear stuff
-            latestWorld = Optional.empty();
             lastLatestWorldMTime = newMTime;
+            latestWorld = null;
 
             // Read and parse
             JsonObject json;
@@ -406,14 +453,15 @@ public class AATracker {
             if (!Files.exists(recordPath)) return;
             if (!Files.exists(eventsPath)) return;
 
-            // If world path changes, set MTimes
-            if (!lastLatestWorld.isPresent() || (!Objects.equals(lastLatestWorld.get().get("world_path"), json.get("world_path")))) {
-                killIfOnPaceman();
+            // If world path changes
+            if (lastLatestWorld == null || (!Objects.equals(lastLatestWorld.get("world_path"), json.get("world_path")))) {
+                endRun();
                 lastRecordMTime = Files.getLastModifiedTime(recordPath).toMillis();
                 lastEventsMTime = Files.getLastModifiedTime(eventsPath).toMillis();
+                runKilledOrEnded = false;
             }
 
-            latestWorld = Optional.of(json); // This latest world is pointing to valid stuff
+            latestWorld = json; // This latest world is pointing to valid stuff
         }
     }
 

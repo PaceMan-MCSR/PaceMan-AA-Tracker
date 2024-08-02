@@ -1,6 +1,7 @@
 {
+  "accessKey": "KEY_HIDDEN",
   "gameVersion": "1.16.1",
-  "modVersion": "14.2+1.16.1",
+  "modVersion": "14.2",
   "aaTrackerVersion": "0.1.0",
   "modList": [
     "atum",
