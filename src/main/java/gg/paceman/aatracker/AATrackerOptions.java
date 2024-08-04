@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 /**
  * Handles the save options for the tracker
@@ -38,12 +39,17 @@ public class AATrackerOptions {
 
     private static void tryStealKey() {
         try {
-            Path path = getPaceManAADir().resolveSibling("options.json");
-            if (Files.exists(path)) {
-                JsonObject json = GSON.fromJson(new String(Files.readAllBytes(path)), JsonObject.class);
-                if (json.has("accessKey")) {
-                    instance.accessKey = json.get("accessKey").getAsString();
-                    AATracker.log("Access key yoinked from regular tracker options!");
+            for (Path path : new Path[]{
+                    getPaceManAADir().resolveSibling("options.json"),
+                    Paths.get(System.getProperty("user.home")).resolve(".PaceMan").resolve("options.json")
+            }) {
+                if (Files.exists(path)) {
+                    JsonObject json = GSON.fromJson(new String(Files.readAllBytes(path)), JsonObject.class);
+                    if (json.has("accessKey")) {
+                        instance.accessKey = json.get("accessKey").getAsString();
+                        AATracker.log("Access key yoinked from regular tracker options!");
+                        return;
+                    }
                 }
             }
         } catch (Exception ignored) {
@@ -55,11 +61,15 @@ public class AATrackerOptions {
     }
 
     public static void ensurePaceManAADir() {
-        new File((System.getProperty("user.home") + "/.PaceMan/AA/").replace("\\", "/").replace("//", "/")).mkdirs();
+        new File((getConfigHome() + "/PaceMan/AA/").replace("\\", "/").replace("//", "/")).mkdirs();
     }
 
     public static Path getPaceManAADir() {
-        return Paths.get(System.getProperty("user.home")).resolve(".PaceMan").resolve("AA").toAbsolutePath();
+        return Paths.get(getConfigHome()).resolve("PaceMan").resolve("AA").toAbsolutePath();
+    }
+
+    private static String getConfigHome() {
+        return Optional.ofNullable(System.getenv("XDG_CONFIG_HOME")).orElse(System.getProperty("user.home") + "/.config/");
     }
 
     public void save() throws IOException {
