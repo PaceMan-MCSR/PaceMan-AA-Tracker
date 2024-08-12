@@ -1,13 +1,16 @@
 {
+  "lastRecordModified": 1723424602663,
   "gameVersion": "1.16.1",
-  "modVersion": "14.2",
-  "aaTrackerVersion": "unspecified",
-  "worldId": "f3327f66b1bfbafc702affe1c268c5f3ea8e366936fa784b61421459075b63e2",
+  "modVersion": "15.0",
+  "aaTrackerVersion": "DEV",
+  "worldId": "d400a2da3b8fe7b91118f6d7e5b7850034ad8f9cf5f8cba85233d4bf8c252cf3",
   "modList": [
     "antigone",
     "antiresourcereload",
     "atum",
     "chunkumulator",
+    "extra-options",
+    "fabric-key-binding-api-v1",
     "fabricloader",
     "fast_reset",
     "forceport",
@@ -18,8 +21,11 @@
     "lithium",
     "minecraft",
     "mixinextras",
+    "mixinsquared",
+    "seedqueue",
     "sleepbackground",
     "sodium",
+    "speedrunapi",
     "speedrunigt",
     "standardsettings",
     "starlight",
@@ -29,34 +35,51 @@
     "worldpreview"
   ],
   "completed": [
-    "adventure/kill_a_mob",
-    "adventure/root",
-    "nether/root",
-    "story/enter_the_nether",
-    "story/iron_tools",
-    "story/lava_bucket",
-    "story/mine_diamond",
-    "story/mine_stone",
-    "story/root",
-    "story/smelt_iron"
+    "adventure/kill_a_mob 485869 276583",
+    "adventure/root 485869 276583",
+    "husbandry/root 130417 120892",
+    "nether/root 259685 249692",
+    "story/enter_the_nether 259685 249692",
+    "story/lava_bucket 238423 228892",
+    "story/mine_stone 37770 29492",
+    "story/obtain_armor 11429 10392",
+    "story/root 32267 23992",
+    "story/smelt_iron 11431 10392"
   ],
   "timelines": [
     {
+      "name": "found_villager",
+      "igt": 492,
+      "rta": 464
+    },
+    {
       "name": "enter_nether",
-      "igt": 105497,
-      "rta": 110371
+      "igt": 249692,
+      "rta": 259228
     }
+  ],
+  "eventList": [
+    "rsg.obtain_iron_ingot 11430 10392",
+    "rsg.obtain_lava_bucket 238423 228892",
+    "rsg.enter_nether 259685 249692",
+    "common.leave_world 713824 401973"
   ],
   "criterias": {
     "biomes": [
-      "beach",
-      "deep_cold_ocean",
-      "forest"
+      "desert",
+      "desert_hills",
+      "plains",
+      "river"
     ],
     "monstersKilled": [
-      "enderman",
-      "magma_cube"
+      "hoglin",
+      "skeleton",
+      "zombified_piglin"
     ],
-    "animalsBred": []
+    "animalsBred": [],
+    "catsTamed": [],
+    "foodEaten": [
+      "bread"
+    ]
   }
 }

@@ -268,7 +268,8 @@ public class AATracker {
         for (String advancementName : advancements.keySet().stream().sorted().collect(Collectors.toList())) {
             JsonObject advancement = advancements.getAsJsonObject(advancementName);
             if (advancement.has("complete") && advancement.get("complete").getAsBoolean() && advancement.has("is_advancement") && advancement.get("is_advancement").getAsBoolean()) {
-                completed.add(advancementName.startsWith("minecraft:") ? advancementName.substring(10) : advancementName);
+                String simpleAdvancementName = advancementName.startsWith("minecraft:") ? advancementName.substring(10) : advancementName;
+                completed.add(String.format("%s %d %d", simpleAdvancementName, advancement.get("rta").getAsLong(), advancement.get("igt").getAsLong()));
             }
         }
 
@@ -276,6 +277,8 @@ public class AATracker {
         JsonArray biomes = new JsonArray();
         JsonArray monstersKilled = new JsonArray();
         JsonArray animalsBred = new JsonArray();
+        JsonArray catsTamed = new JsonArray();
+        JsonArray foodEaten = new JsonArray();
         if (advancements.has("minecraft:adventure/adventuring_time")) {
             advancements.getAsJsonObject("minecraft:adventure/adventuring_time").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> biomes.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
@@ -285,9 +288,17 @@ public class AATracker {
         if (advancements.has("minecraft:husbandry/bred_all_animals")) {
             advancements.getAsJsonObject("minecraft:husbandry/bred_all_animals").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> animalsBred.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
+        if (advancements.has("husbandry/complete_catalogue")) {
+            advancements.getAsJsonObject("husbandry/complete_catalogue").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> catsTamed.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+        }
+        if (advancements.has("minecraft:husbandry/balanced_diet")) {
+            advancements.getAsJsonObject("minecraft:husbandry/balanced_diet").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> foodEaten.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+        }
         criterias.add("biomes", biomes);
         criterias.add("monstersKilled", monstersKilled);
         criterias.add("animalsBred", animalsBred);
+        criterias.add("catsTamed", catsTamed);
+        criterias.add("foodEaten", foodEaten);
 
         JsonObject toSend = new JsonObject();
 
