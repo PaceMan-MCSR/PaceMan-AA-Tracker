@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public final class PostUtil {
     private static final int MIN_DENY_CODE = 400;
-    
+
     private PostUtil() {
     }
 
