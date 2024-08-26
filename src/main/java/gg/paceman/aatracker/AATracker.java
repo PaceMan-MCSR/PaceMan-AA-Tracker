@@ -32,7 +32,6 @@ public class AATracker {
     public static final String PACEMANGG_AA_KILL_ENDPOINT = "https://paceman.gg/api/aa/kill";
     private static final String PACEMANGG_TEST_ENDPOINT = "https://paceman.gg/api/test";
     public static final Pattern RANDOM_WORLD_PATTERN = Pattern.compile("^Random Speedrun #\\d+$");
-    private static final int MIN_DENY_CODE = 400;
     private static final Path GLOBAL_LATEST_WORLD_PATH = Paths.get(System.getProperty("user.home")).resolve("speedrunigt").resolve("latest_world.json").toAbsolutePath();
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private static final Gson GSON = new Gson();

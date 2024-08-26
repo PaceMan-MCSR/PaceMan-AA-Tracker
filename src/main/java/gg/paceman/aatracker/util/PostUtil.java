@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
 public final class PostUtil {
+    private static final int MIN_DENY_CODE = 400;
+    
     private PostUtil() {
     }
 
@@ -29,7 +31,7 @@ public final class PostUtil {
                 os.write(input, 0, input.length);
             }
             int responseCode = connection.getResponseCode();
-            String message = responseCode >= 400 ? readStream(connection.getErrorStream()) : connection.getResponseMessage();
+            String message = responseCode >= MIN_DENY_CODE ? readStream(connection.getErrorStream()) : connection.getResponseMessage();
 
 
             // Return the response code
