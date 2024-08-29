@@ -40,10 +40,7 @@ processResources {
     // Totally stolen from Fabric
     inputs.property "version", project.version
 
-    filesMatching("julti.plugin.json") {
-        expand "version": project.version
-    }
-    filesMatching("jingle.plugin.json") {
+    filesMatching("*.plugin.json") {
         expand "version": project.version
     }
 }
