@@ -57,7 +57,8 @@ public class AATrackerJarLaunch {
 
     private static void showMultiTrackerWarning() {
         boolean isJulti = LockUtil.isLocked(Paths.get(System.getProperty("user.home")).resolve(".Julti").resolve("LOCK").toAbsolutePath());
-        int ans = JOptionPane.showConfirmDialog(null, "PaceMan AA Tracker is already opened" + (isJulti ? " in Julti" : "") + "! Are you sure you want to open the tracker again?", "PaceMan AA Tracker: Already Opened", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        boolean isJingle = LockUtil.isLocked(Paths.get(System.getProperty("user.home")).resolve(".config").resolve("Jingle").resolve("LOCK").toAbsolutePath());
+        int ans = JOptionPane.showConfirmDialog(null, "PaceMan AA Tracker is already opened" + (isJulti ? " in Julti" : (isJingle ? " in Jingle" : "")) + "! Are you sure you want to open the tracker again?", "PaceMan AA Tracker: Already Opened", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (ans != 0) {
             System.exit(0);
         }

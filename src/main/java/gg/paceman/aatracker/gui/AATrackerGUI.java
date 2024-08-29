@@ -29,6 +29,10 @@ public class AATrackerGUI extends JFrame {
     private final boolean asPlugin;
 
     public AATrackerGUI(boolean asPlugin) {
+        this(asPlugin, true);
+    }
+
+    public AATrackerGUI(boolean asPlugin, boolean actuallyShow) {
         this.setTitle("PaceMan AA Tracker v" + AATracker.VERSION);
         this.asPlugin = asPlugin;
 
@@ -74,7 +78,7 @@ public class AATrackerGUI extends JFrame {
         this.setMinimumSize(new Dimension(300, asPlugin ? 140 : 120));
         this.pack();
         this.setResizable(false);
-        this.setVisible(true);
+        this.setVisible(actuallyShow);
     }
 
     public static AATrackerGUI open(boolean asPlugin, Point initialLocation) {
@@ -87,6 +91,10 @@ public class AATrackerGUI extends JFrame {
             instance.requestFocus();
         }
         return instance;
+    }
+
+    public static JPanel getJinglePanel() {
+        return new AATrackerGUI(true, false).mainPanel;
     }
 
     private void onPressTest() {

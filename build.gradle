@@ -25,7 +25,9 @@ configurations {
 
 dependencies {
     // Choose Julti version: https://jitpack.io/#DuncanRuns/Julti/
-    implementation 'com.github.DuncanRuns:Julti:40c2160a68'
+    implementation 'com.github.DuncanRuns:Julti:v1.5.0'
+    // Choose Jingle version: https://jitpack.io/#DuncanRuns/Jingle/
+    implementation 'com.github.DuncanRuns:Jingle:caeba41398'
 
     provided 'com.jetbrains.intellij.java:java-gui-forms-rt:203.7148.30'
     provided 'com.google.code.gson:gson:2.10'
@@ -57,12 +59,23 @@ jar {
     exclude "julti.plugin.json"
 }
 
-task pluginJar(type: Jar) {
+tasks.register('jultiPluginJar', Jar) {
     duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
-    archiveBaseName = "${project.archives_base_name}-plugin"
+    archiveBaseName = "${project.archives_base_name}-julti-plugin"
     from sourceSets.main.output
+    exclude "jingle.plugin.json"
+    exclude "gg/paceman/aatracker/launching/AATrackerJinglePluginInit.class"
+}
+
+tasks.register('jinglePluginJar', Jar) {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    archiveBaseName = "${project.archives_base_name}-jingle-plugin"
+    from sourceSets.main.output
+    exclude "julti.plugin.json"
+    exclude "gg/paceman/aatracker/launching/AATrackerJultiPluginInit.class"
 }
 
 artifacts {
-    archives pluginJar
+    archives jultiPluginJar
+    archives jinglePluginJar
 }

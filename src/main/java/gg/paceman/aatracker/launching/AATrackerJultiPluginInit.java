@@ -24,7 +24,7 @@ import java.util.Optional;
 /**
  * Launches PaceMan AATracker as a Julti Plugin
  */
-public class AATrackerPluginInit implements PluginInitializer {
+public class AATrackerJultiPluginInit implements PluginInitializer {
     private static LockUtil.LockStuff lockStuff;
     private static boolean shouldRun = true;
 
@@ -35,10 +35,10 @@ public class AATrackerPluginInit implements PluginInitializer {
         // Run this in dev to test as Julti plugin
 
         PluginManager.JultiPluginData pluginData = PluginManager.JultiPluginData.fromString(
-                Resources.toString(Resources.getResource(AATrackerPluginInit.class, "/julti.plugin.json"), Charset.defaultCharset())
+                Resources.toString(Resources.getResource(AATrackerJultiPluginInit.class, "/julti.plugin.json"), Charset.defaultCharset())
         );
         AATracker.VERSION = pluginData.version;
-        JultiAppLaunch.launchWithDevPlugin(args, pluginData, new AATrackerPluginInit());
+        JultiAppLaunch.launchWithDevPlugin(args, pluginData, new AATrackerJultiPluginInit());
     }
 
     private static void checkLock() {
@@ -63,8 +63,8 @@ public class AATrackerPluginInit implements PluginInitializer {
     @Override
     public void initialize() {
         AATrackerOptions.ensurePaceManAADir();
-        AATrackerPluginInit.setLoggers();
-        AATrackerPluginInit.checkLock();
+        AATrackerJultiPluginInit.setLoggers();
+        AATrackerJultiPluginInit.checkLock();
         if (!shouldRun) {
             return;
         }
