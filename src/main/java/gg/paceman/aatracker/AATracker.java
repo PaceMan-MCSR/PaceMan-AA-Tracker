@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * The actual logic and stuff for the PaceMan AA Tracker
  */
 public class AATracker {
-    public static final String PACEMANGG_AA_SEND_ENDPOINT = "https://paceman.gg/api/aa/send";
+    public static final String PACEMANGG_AA_SEND_ENDPOINT = "https://paceman.gg/api/aa/sendevent";
     public static final String PACEMANGG_AA_KILL_ENDPOINT = "https://paceman.gg/api/aa/kill";
     private static final String PACEMANGG_TEST_ENDPOINT = "https://paceman.gg/api/test";
     public static final Pattern RANDOM_WORLD_PATTERN = Pattern.compile("^Random Speedrun #\\d+( \\(\\d+\\))?$");
