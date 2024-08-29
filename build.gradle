@@ -43,6 +43,9 @@ processResources {
     filesMatching("julti.plugin.json") {
         expand "version": project.version
     }
+    filesMatching("jingle.plugin.json") {
+        expand "version": project.version
+    }
 }
 
 jar {
