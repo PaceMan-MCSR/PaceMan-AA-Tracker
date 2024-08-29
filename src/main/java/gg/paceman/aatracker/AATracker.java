@@ -148,8 +148,16 @@ public class AATracker {
                 && json.get("hasLegalSettings").getAsBoolean()
                 && json.has("seed")
                 && json.get("seed").getAsString().isEmpty()
-                && json.has("difficulty")
-                && !json.get("difficulty").getAsString().equalsIgnoreCase("peaceful");
+                && AATracker.jsonHasGoodDifficulty(json);
+    }
+
+    private static boolean jsonHasGoodDifficulty(JsonObject json) {
+        if (json.has("difficulty")) {
+            return !json.get("difficulty").getAsString().equalsIgnoreCase("peaceful");
+        } else if (json.has("worldDifficulty")) {
+            return !json.get("worldDifficulty").getAsString().equalsIgnoreCase("peaceful");
+        }
+        return false;
     }
 
     private static String sha256Hash(String input) {
