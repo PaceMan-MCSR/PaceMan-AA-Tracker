@@ -267,6 +267,10 @@ public class AATracker {
             return;
         }
 
+        if (!record.has("category") || !record.get("category").getAsString().equals("ALL_ADVANCEMENTS")) {
+            log("Run category is not yet ALL_ADVANCEMENTS, won't be sending this run until the category is set or auto switch occurs.");
+            return;
+        }
 
         JsonArray completed = new JsonArray();
         JsonArray timelines = record.getAsJsonArray("timelines");
@@ -441,7 +445,8 @@ public class AATracker {
             Path worldPath = Paths.get(json.get("world_path").getAsString());
             if (!RANDOM_WORLD_PATTERN.matcher(worldPath.getFileName().toString()).matches())
                 return;
-            if (!json.get("category").getAsString().equals("ALL_ADVANCEMENTS")) return;
+            String category = json.get("category").getAsString();
+            if (!(category.equals("ALL_ADVANCEMENTS") || category.equals("ANY"))) return;
             if (!areAtumSettingsGood(worldPath)) return;
 
             Path recordPath = worldPath.resolve("speedrunigt").resolve("record.json");
