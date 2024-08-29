@@ -57,6 +57,9 @@ jar {
     from configurations.provided.asFileTree.files.collect { zipTree(it) }
     // Main jar is not a plugin
     exclude "julti.plugin.json"
+    exclude "jingle.plugin.json"
+    exclude "gg/paceman/aatracker/launching/AATrackerJinglePluginInit.class"
+    exclude "gg/paceman/aatracker/launching/AATrackerJultiPluginInit.class"
 }
 
 tasks.register('jultiPluginJar', Jar) {
