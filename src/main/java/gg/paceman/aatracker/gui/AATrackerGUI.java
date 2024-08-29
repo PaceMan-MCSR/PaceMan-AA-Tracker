@@ -125,7 +125,7 @@ public class AATrackerGUI extends JFrame {
             return;
         }
 
-        onSuccess.accept("Your access key is valid! Please make sure you have SpeedRunIGT 14.1+ installed on all your instances!");
+        onSuccess.accept("Your access key is valid! Please make sure you have SpeedRunIGT 15.1+ installed on all your instances!");
     }
 
     private boolean hasChanges() {
