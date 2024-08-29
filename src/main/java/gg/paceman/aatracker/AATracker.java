@@ -255,9 +255,19 @@ public class AATracker {
             updateEvents();
         }
 
-        if (events.isEmpty()) return;
-        if (hasEvilEvents()) endRun();
-        if (!hasNetherEnter()) return;
+        if (events.isEmpty()) {
+            logDebug("Cancelling because no events yet...");
+            return;
+        }
+        if (hasEvilEvents()) {
+            logDebug("Ending run because cheaty events are detected!");
+            endRun();
+            return;
+        }
+        if (!hasNetherEnter()) {
+            logDebug("Not sending yet because the nether has not been entered...");
+            return;
+        }
 
         JsonObject record;
         try {
@@ -366,6 +376,7 @@ public class AATracker {
 
     private static void endRun() {
         if (runOnPaceMan) {
+            logDebug("Killing run since it ended and was on paceman...");
             try {
                 PostUtil.sendData(PACEMANGG_AA_KILL_ENDPOINT, String.format("{\"accessKey\":\"%s\"}", AATrackerOptions.getInstance().accessKey));
             } catch (IOException e) {
