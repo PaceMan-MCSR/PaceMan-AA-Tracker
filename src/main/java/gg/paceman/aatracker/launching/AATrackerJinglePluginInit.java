@@ -68,7 +68,7 @@ public class AATrackerJinglePluginInit {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        Optional<PluginManager.LoadedJinglePlugin> pluginData = PluginManager.getLoadedPlugins().stream().filter(loadedJinglePlugin -> loadedJinglePlugin.pluginData.id.equals("paceman-tracker")).findAny();
+        Optional<PluginManager.LoadedJinglePlugin> pluginData = PluginManager.getLoadedPlugins().stream().filter(loadedJinglePlugin -> loadedJinglePlugin.pluginData.id.equals("paceman-aa-tracker")).findAny();
         if (pluginData.isPresent()) {
             String version = pluginData.get().pluginData.version;
             AATracker.VERSION = version.equals("${version}") ? "DEV" : version;
