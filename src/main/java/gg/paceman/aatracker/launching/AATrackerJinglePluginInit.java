@@ -44,7 +44,7 @@ public class AATrackerJinglePluginInit {
             shouldRun = false;
         } else {
             lockStuff = LockUtil.lock(lockPath);
-            PluginEvents.RunnableEventType.STOP.register(() -> LockUtil.releaseLock(lockStuff));
+            PluginEvents.STOP.register(() -> LockUtil.releaseLock(lockStuff));
             Runtime.getRuntime().addShutdownHook(new Thread(() -> LockUtil.releaseLock(lockStuff)));
         }
     }
@@ -75,7 +75,7 @@ public class AATrackerJinglePluginInit {
             AATracker.log("Loaded PaceMan AA Tracker v" + AATracker.VERSION);
         }
         AATracker.start(true);
-        PluginEvents.RunnableEventType.STOP.register(AATracker::stop);
+        PluginEvents.STOP.register(AATracker::stop);
 
         JingleGUI.addPluginTab("PaceMan AA Tracker", AATrackerPanel.getPanel());
     }
