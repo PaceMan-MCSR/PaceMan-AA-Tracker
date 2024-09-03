@@ -310,7 +310,7 @@ public class AATracker {
             advancements.getAsJsonObject("minecraft:husbandry/bred_all_animals").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> animalsBred.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
         if (advancements.has("minecraft:husbandry/complete_catalogue")) {
-            advancements.getAsJsonObject("minecraft:husbandry/complete_catalogue").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> catsTamed.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+            advancements.getAsJsonObject("minecraft:husbandry/complete_catalogue").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> catsTamed.add(cleanseCatName(s)));
         }
         if (advancements.has("minecraft:husbandry/balanced_diet")) {
             advancements.getAsJsonObject("minecraft:husbandry/balanced_diet").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> foodEaten.add(s.startsWith("minecraft:") ? s.substring(10) : s));
@@ -364,6 +364,16 @@ public class AATracker {
                 endRun();
             }
         }
+    }
+
+    private static String cleanseCatName(String catName) {
+        if (catName.startsWith("textures/entity/cat/")) {
+            catName = catName.substring("textures/entity/cat/".length());
+        }
+        if (catName.endsWith(".png")) {
+            catName = catName.substring(0, catName.length() - 4);
+        }
+        return catName;
     }
 
     private static boolean hasNetherEnter() {
