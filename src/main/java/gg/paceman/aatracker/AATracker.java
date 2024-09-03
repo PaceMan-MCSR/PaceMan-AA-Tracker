@@ -31,6 +31,7 @@ public class AATracker {
     public static final String PACEMANGG_AA_SEND_ENDPOINT = "https://paceman.gg/api/aa/sendevent";
     public static final String PACEMANGG_AA_KILL_ENDPOINT = "https://paceman.gg/api/aa/kill";
     private static final String PACEMANGG_TEST_ENDPOINT = "https://paceman.gg/api/test";
+    private static final String EGA_ADVANCEMENT = "minecraft:recipes/misc/mojang_banner_pattern";
     public static final Pattern RANDOM_WORLD_PATTERN = Pattern.compile("^Random Speedrun #\\d+( \\(\\d+\\))?$");
     private static final Path GLOBAL_LATEST_WORLD_PATH = Paths.get(System.getProperty("user.home")).resolve("speedrunigt").resolve("latest_world.json").toAbsolutePath();
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
@@ -282,8 +283,12 @@ public class AATracker {
             return;
         }
 
+        if (!(record.has("timelines") && record.get("timelines").isJsonArray() && record.has("advancements") && record.get("advancements").isJsonObject())) {
+            log("record.json is missing stuff, can't send this run yet (you should never see this message lol).");
+            return;
+        }
+
         JsonArray completed = new JsonArray();
-        JsonArray timelines = record.getAsJsonArray("timelines");
 
         JsonObject advancements = record.getAsJsonObject("advancements");
         for (String advancementName : advancements.keySet().stream().sorted().collect(Collectors.toList())) {
@@ -321,6 +326,18 @@ public class AATracker {
         criterias.add("catsTamed", catsTamed);
         criterias.add("foodEaten", foodEaten);
 
+        JsonObject aaItems = new JsonObject();
+
+        boolean hasEnchantedGoldenApple = advancements.has(EGA_ADVANCEMENT) && advancements.getAsJsonObject(EGA_ADVANCEMENT).has("complete") && advancements.getAsJsonObject(EGA_ADVANCEMENT).get("complete").getAsBoolean();
+        aaItems.addProperty("has_enchanted_golden_apple", hasEnchantedGoldenApple);
+
+        aaItems.addProperty("skulls", 0);
+        getAnyPlayerStats(record).ifPresent(playerStats -> aaItems.addProperty("skulls",
+                getItemStat(playerStats, "minecraft:picked_up", "minecraft:wither_skeleton_skull") -
+                        getItemStat(playerStats, "minecraft:dropped", "minecraft:wither_skeleton_skull") -
+                        getItemStat(playerStats, "minecraft:used", "minecraft:wither_skeleton_skull")
+        ));
+
         JsonObject toSend = new JsonObject();
 
         toSend.addProperty("lastRecordModified", lastRecordMTime);
@@ -332,11 +349,12 @@ public class AATracker {
         toSend.addProperty("worldId", getWorldId());
         toSend.add("modList", modList);
         toSend.add("completed", completed);
-        toSend.add("timelines", timelines);
+        toSend.add("timelines", record.getAsJsonArray("timelines"));
         JsonArray eventList = new JsonArray(events.size());
         events.forEach(eventList::add);
         toSend.add("eventList", eventList);
         toSend.add("criterias", criterias);
+        toSend.add("items", aaItems);
 
         String toSendStringNoAK = toSend.toString();
         if (Objects.equals(lastSend, toSendStringNoAK)) {
@@ -495,4 +513,22 @@ public class AATracker {
         return !AATracker.asPlugin || options.enabledForPlugin;
     }
 
+    private static int getItemStat(JsonObject playerStats, String type, String itemName) {
+        return Optional.ofNullable(playerStats)
+                .map(j -> j.get(type))
+                .map(e -> e.isJsonObject() ? e.getAsJsonObject() : null)
+                .map(j -> j.get(itemName))
+                .map(e -> e.isJsonPrimitive() ? e.getAsJsonPrimitive() : null)
+                .map(p -> p.isNumber() ? p.getAsInt() : null).orElse(0);
+    }
+
+    private static Optional<JsonObject> getAnyPlayerStats(JsonObject record) {
+        return Optional.ofNullable(record)
+                .map(j -> j.get("stats"))
+                .map(e -> e.isJsonObject() ? e.getAsJsonObject() : null)
+                .map(j -> j.keySet().isEmpty() ? null : j.get(j.keySet().stream().findAny().get()))
+                .map(e -> e.isJsonObject() ? e.getAsJsonObject() : null)
+                .map(j -> j.get("stats"))
+                .map(e -> e.isJsonObject() ? e.getAsJsonObject() : null);
+    }
 }
