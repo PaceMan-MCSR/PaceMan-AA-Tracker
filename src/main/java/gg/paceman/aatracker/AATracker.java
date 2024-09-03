@@ -309,8 +309,8 @@ public class AATracker {
         if (advancements.has("minecraft:husbandry/bred_all_animals")) {
             advancements.getAsJsonObject("minecraft:husbandry/bred_all_animals").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> animalsBred.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
-        if (advancements.has("husbandry/complete_catalogue")) {
-            advancements.getAsJsonObject("husbandry/complete_catalogue").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> catsTamed.add(s.startsWith("minecraft:") ? s.substring(10) : s));
+        if (advancements.has("minecraft:husbandry/complete_catalogue")) {
+            advancements.getAsJsonObject("minecraft:husbandry/complete_catalogue").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> catsTamed.add(s.startsWith("minecraft:") ? s.substring(10) : s));
         }
         if (advancements.has("minecraft:husbandry/balanced_diet")) {
             advancements.getAsJsonObject("minecraft:husbandry/balanced_diet").getAsJsonObject("criteria").keySet().stream().sorted().forEach(s -> foodEaten.add(s.startsWith("minecraft:") ? s.substring(10) : s));
