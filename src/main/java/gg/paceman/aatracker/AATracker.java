@@ -37,6 +37,9 @@ public class AATracker {
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private static final Gson GSON = new Gson();
 
+    private static String lastDebugLog = "";
+    private static int debugLogRepeats = 0;
+
     private static final boolean ACTUALLY_SEND = true;
 
     public static String VERSION = "Unknown"; // To be set dependent on launch method
@@ -66,7 +69,14 @@ public class AATracker {
     }
 
     public static void logDebug(String message) {
-        debugConsumer.accept(message);
+        if (message.equals(lastDebugLog)) {
+            debugLogRepeats++;
+            if (((debugLogRepeats - 1) & debugLogRepeats) != 0) return;
+        } else {
+            debugLogRepeats = 1;
+        }
+        debugConsumer.accept(message + (debugLogRepeats > 1 ? " (x" + debugLogRepeats + ")" : ""));
+        lastDebugLog = message;
     }
 
     public static void logError(String error) {
@@ -229,7 +239,7 @@ public class AATracker {
         checkLatestWorld();
 
         if (latestWorld == null) { // only present if a Random Speedrun, AA category, valid atum settings, latest_world.json exists
-            endRun();
+            endRun("Latest World was null.", true);
             return;
         }
 
@@ -262,7 +272,7 @@ public class AATracker {
         }
         if (hasEvilEvents()) {
             logDebug("Ending run because cheaty events are detected!");
-            endRun();
+            endRun("Run has cheaty events (such as open to lan)", false);
             return;
         }
         if (!hasNetherEnter()) {
@@ -375,11 +385,11 @@ public class AATracker {
                     log("Run updated on PaceMan.gg!");
                 } else {
                     logError("Failed to send to PaceMan.gg: " + response.message);
-                    endRun();
+                    endRun("Failed to send to PaceMan.gg", false);
                 }
             } catch (Throwable t) {
                 logError("Error during paceman.gg sending:\n" + ExceptionUtil.toDetailedString(t));
-                endRun();
+                endRun("Error during sending to paceman.gg", false);
             }
         }
     }
@@ -402,7 +412,8 @@ public class AATracker {
         return events.stream().anyMatch(s -> s.startsWith("common.multiplayer") || s.startsWith("common.view_seed") || s.startsWith("common.enable_cheats") || s.startsWith("common.old_world"));
     }
 
-    private static void endRun() {
+    private static void endRun(String reason, boolean onlyLogIfWasOnPaceman) {
+        if (runOnPaceMan || !onlyLogIfWasOnPaceman) logDebug("Ending run for reason: " + reason);
         if (runOnPaceMan) {
             logDebug("Killing run since it ended and was on paceman...");
             try {
@@ -478,14 +489,22 @@ public class AATracker {
             }
 
             // Check everything is there
-            if (!Stream.of("version", "mod_version", "category", "mods", "world_path").allMatch(json::has)) return;
+            if (!Stream.of("version", "mod_version", "category", "mods", "world_path").allMatch(json::has)) {
+                logDebug("latest_world.json is missing data! Required data: \"version\", \"mod_version\", \"category\", \"mods\", \"world_path\"");
+                return;
+            }
 
             // Check for random speedrun #x, AA cat, and atum settings
             Path worldPath = Paths.get(json.get("world_path").getAsString());
-            if (!RANDOM_WORLD_PATTERN.matcher(worldPath.getFileName().toString()).matches())
+            if (!RANDOM_WORLD_PATTERN.matcher(worldPath.getFileName().toString()).matches()) {
+                logDebug("World path from latest_world.json does not match random world pattern.");
                 return;
+            }
             String category = json.get("category").getAsString();
-            if (!(category.equals("ALL_ADVANCEMENTS") || category.equals("ANY"))) return;
+            if (!(category.equals("ALL_ADVANCEMENTS") || category.equals("ANY"))) {
+                logDebug("Invalid category in latest_world.json.");
+                return;
+            }
             if (!areAtumSettingsGood(worldPath)) return;
 
             Path recordPath = worldPath.resolve("speedrunigt").resolve("record.json");
@@ -495,7 +514,7 @@ public class AATracker {
 
             // If world path changes
             if (lastLatestWorld == null || (!Objects.equals(lastLatestWorld.get("world_path"), json.get("world_path")))) {
-                endRun();
+                endRun("World path changed.", true);
                 lastRecordMTime = Files.getLastModifiedTime(recordPath).toMillis();
                 lastEventsMTime = Files.getLastModifiedTime(eventsPath).toMillis();
                 runKilledOrEnded = false;
