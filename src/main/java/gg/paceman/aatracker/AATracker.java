@@ -215,7 +215,7 @@ public class AATracker {
             } else {
                 String detailedString = ExceptionUtil.toDetailedString(t);
                 AATracker.logError("PaceMan AA Tracker has crashed! Please report this bug to the developers. " + detailedString);
-                AATracker.logError("PaceMan AA Tracker will now shutdown, Julti will need to be restarted to use PaceMan AA Tracker.");
+                AATracker.logError("PaceMan AA Tracker will now shutdown, Julti/Jingle will need to be restarted to use PaceMan AA Tracker.");
                 AATracker.stop();
             }
         }
