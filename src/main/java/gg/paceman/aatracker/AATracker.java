@@ -518,6 +518,7 @@ public class AATracker {
                 lastRecordMTime = Files.getLastModifiedTime(recordPath).toMillis();
                 lastEventsMTime = Files.getLastModifiedTime(eventsPath).toMillis();
                 runKilledOrEnded = false;
+                events = Collections.emptyList();
             }
 
             latestWorld = json; // This latest world is pointing to valid stuff
