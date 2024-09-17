@@ -296,6 +296,11 @@ public class AATracker {
             return;
         }
 
+        if (record == null) {
+            logDebug("Not sending yet because the record is null or empty.");
+            return;
+        }
+
         if (!record.has("category") || !record.get("category").getAsString().equals("ALL_ADVANCEMENTS")) {
             log("Run category is not yet ALL_ADVANCEMENTS, won't be sending this run until the category is set or auto switch occurs.");
             return;
