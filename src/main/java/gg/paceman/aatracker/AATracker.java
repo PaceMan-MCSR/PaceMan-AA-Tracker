@@ -57,6 +57,7 @@ public class AATracker {
     private static long lastEventsMTime = 0;
     private static List<String> events = Collections.emptyList();
     private static String lastSend = "";
+    private static boolean worldActive = false;
 
     private static boolean runOnPaceMan = false;
     private static boolean runKilledOrEnded = false;
@@ -264,10 +265,17 @@ public class AATracker {
 
         if (eventsFileModified) {
             updateEvents();
+            if (Math.abs(System.currentTimeMillis() - getLastUsefulEventTime()) <= 20_000) {
+                worldActive = true;
+            }
         }
 
         if (events.isEmpty()) {
             logDebug("Cancelling because no events yet...");
+            return;
+        }
+        if (!worldActive) {
+            logDebug("Cancelling because the world isn't being actively played...");
             return;
         }
         if (hasEvilEvents()) {
@@ -515,10 +523,11 @@ public class AATracker {
             // If world path changes
             if (lastLatestWorld == null || (!Objects.equals(lastLatestWorld.get("world_path"), json.get("world_path")))) {
                 endRun("World path changed.", true);
-                lastRecordMTime = Files.getLastModifiedTime(recordPath).toMillis();
-                lastEventsMTime = Files.getLastModifiedTime(eventsPath).toMillis();
+                lastRecordMTime = 0;
+                lastEventsMTime = 0;
                 runKilledOrEnded = false;
                 events = Collections.emptyList();
+                worldActive = false;
             }
 
             latestWorld = json; // This latest world is pointing to valid stuff
@@ -550,5 +559,24 @@ public class AATracker {
                 .map(e -> e.isJsonObject() ? e.getAsJsonObject() : null)
                 .map(j -> j.get("stats"))
                 .map(e -> e.isJsonObject() ? e.getAsJsonObject() : null);
+    }
+
+    private static long getLastUsefulEventTime() {
+        if (events.isEmpty()) return 0;
+        String last = events.get(events.size() - 1);
+        String[] lastArgs = last.split(" ");
+        if (lastArgs.length < 2) return 0;
+        for (int i = events.size() - 1; i >= 0; i--) {
+            String s = events.get(i);
+            if (s.startsWith("common.leave_world") || s.startsWith("common.rejoin_world")) continue;
+            String[] lastUsefulArgs = s.split(" ");
+            if (lastUsefulArgs.length < 2) continue;
+            try {
+                return lastEventsMTime - Long.parseLong(lastArgs[1]) + Long.parseLong(lastUsefulArgs[1]);
+            } catch (NumberFormatException e) {
+                break;
+            }
+        }
+        return 0;
     }
 }
