@@ -7,8 +7,11 @@ group = project.maven_group
 version = project.version
 archivesBaseName = project.archives_base_name
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 
 repositories {
     mavenCentral()
