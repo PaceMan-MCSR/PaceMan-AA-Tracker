@@ -288,6 +288,11 @@ public class AATracker {
             return;
         }
 
+        if (!hasCorrectRecordsSetting(getWorldPath().get().getParent().getParent())) {
+            logWarning("Your SpeedRunIGT records setting is incorrect! Please change the 'Make Record' setting to 'Every Run'!");
+            return;
+        }
+
         JsonObject record;
         try {
             record = GSON.fromJson(new String(Files.readAllBytes(recordPath)), JsonObject.class);
@@ -583,5 +588,31 @@ public class AATracker {
             }
         }
         return 0;
+    }
+
+    private static boolean hasCorrectRecordsSetting(Path instancePath) {
+        Path srigtOptionsPath = (
+                Files.exists(instancePath.resolve("speedrunigt").resolve(".useglobaloption")) ?
+                        Paths.get(System.getProperty("user.home")).resolve("speedrunigt").toAbsolutePath() :
+                        instancePath.resolve("speedrunigt")
+        ).resolve("options.txt");
+        if (!Files.exists(srigtOptionsPath)) {
+            // This should mean defaults values are used
+            return true;
+        }
+        String contents;
+        try {
+            contents = new String(Files.readAllBytes(srigtOptionsPath));
+        } catch (IOException e) {
+            logError("Failed to determine SpeedRunIGT settings! " + ExceptionUtil.toDetailedString(e));
+            return false;
+        }
+        for (String line : contents.split("\\n")) {
+            line = line.trim();
+            if (line.startsWith("speedrunigt:generate_record:"))
+                return Objects.equals(line, "speedrunigt:generate_record:EVERYTHING");
+        }
+        // Option doesn't exist, so default value is used
+        return true;
     }
 }
