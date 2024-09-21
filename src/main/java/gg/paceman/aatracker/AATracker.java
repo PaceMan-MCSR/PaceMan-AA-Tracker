@@ -99,7 +99,7 @@ public class AATracker {
         boolean oldExists = Files.exists(oldAtumPropPath);
         boolean newExists = Files.exists(newAtumJsonPath);
         if (!(oldExists || newExists)) {
-            AATracker.logWarning("You must use the Atum mod " + oldAtumPropPath);
+            AATracker.logWarning("You must use the Atum mod!");
             return false; // no settings exist
         }
 
@@ -246,6 +246,7 @@ public class AATracker {
 
         if (runKilledOrEnded) return;
 
+        assert getWorldPath().isPresent();
         Path speedrunigtPath = getWorldPath().get().resolve("speedrunigt");
         Path recordPath = speedrunigtPath.resolve("record.json");
         Path eventsPath = speedrunigtPath.resolve("events.log");
