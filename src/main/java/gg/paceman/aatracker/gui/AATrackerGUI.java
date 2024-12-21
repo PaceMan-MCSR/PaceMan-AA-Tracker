@@ -155,6 +155,7 @@ public class AATrackerGUI extends JFrame {
             throw new RuntimeException(ex);
         }
         this.updateButtons();
+        AATracker.jingleQABRefresh.run();
     }
 
     private void updateButtons() {
