@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 public class AATrackerGUI extends JFrame {
     private static AATrackerGUI instance = null;
-    private JCheckBox enabledCheckBox;
+    public JCheckBox enabledCheckBox;
     private JPasswordField accessKeyField;
     private JPanel mainPanel;
     private JButton saveButton;
@@ -93,8 +93,12 @@ public class AATrackerGUI extends JFrame {
         return instance;
     }
 
-    public static JPanel getJinglePanel() {
-        return new AATrackerGUI(true, false).mainPanel;
+    static AATrackerGUI getHeadless() {
+        return new AATrackerGUI(true, false);
+    }
+
+    public JPanel getMainPanel() {
+        return this.mainPanel;
     }
 
     private void onPressTest() {

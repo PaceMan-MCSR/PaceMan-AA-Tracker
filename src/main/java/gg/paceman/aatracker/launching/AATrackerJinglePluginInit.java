@@ -3,8 +3,10 @@ package gg.paceman.aatracker.launching;
 import com.google.common.io.Resources;
 import gg.paceman.aatracker.AATracker;
 import gg.paceman.aatracker.AATrackerOptions;
+import gg.paceman.aatracker.gui.AATrackerGUI;
 import gg.paceman.aatracker.gui.AATrackerPanel;
 import gg.paceman.aatracker.util.LockUtil;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Level;
 import xyz.duncanruns.jingle.Jingle;
 import xyz.duncanruns.jingle.JingleAppLaunch;
@@ -12,6 +14,7 @@ import xyz.duncanruns.jingle.gui.JingleGUI;
 import xyz.duncanruns.jingle.plugin.PluginEvents;
 import xyz.duncanruns.jingle.plugin.PluginManager;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -77,6 +80,35 @@ public class AATrackerJinglePluginInit {
         AATracker.start(true);
         PluginEvents.STOP.register(AATracker::stop);
 
-        JingleGUI.addPluginTab("PaceMan AA Tracker", AATrackerPanel.getPanel());
+        Pair<AATrackerGUI, JPanel> guiPair = AATrackerPanel.getNewGUIAsPanel();
+        AATrackerGUI aaTrackerGUI = guiPair.getLeft();
+        JPanel pmtPanel = guiPair.getRight();
+
+        JingleGUI.addPluginTab("PaceMan AA Tracker", pmtPanel);
+
+
+        JingleGUI.get().registerQuickActionButton(0, () -> {
+            AATrackerOptions options = AATrackerOptions.getInstance();
+            if (options == null) return null;
+            if (options.accessKey.isEmpty()) return null;
+            return JingleGUI.makeButton(
+                    options.enabledForPlugin ? "Disable AA PaceMan" : "Enable AA PaceMan",
+                    () -> {
+                        options.enabledForPlugin = !options.enabledForPlugin;
+                        aaTrackerGUI.enabledCheckBox.setSelected(options.enabledForPlugin);
+                        JingleGUI.get().refreshQuickActions();
+                        JingleGUI.get().refreshHack();
+                        try {
+                            options.save();
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    },
+                    () -> JingleGUI.get().openTab(pmtPanel),
+                    "Right Click to Configure",
+                    true
+            );
+        });
+        AATracker.jingleQABRefresh = () -> JingleGUI.get().refreshQuickActions();
     }
 }

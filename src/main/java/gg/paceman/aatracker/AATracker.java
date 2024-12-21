@@ -49,6 +49,8 @@ public class AATracker {
     public static Consumer<String> warningConsumer = System.out::println;
     private static boolean asPlugin;
 
+    public static Runnable jingleQABRefresh = () -> {
+    };
 
     // Stuff that changes over the course of tick()
     private static long lastLatestWorldMTime = 0;

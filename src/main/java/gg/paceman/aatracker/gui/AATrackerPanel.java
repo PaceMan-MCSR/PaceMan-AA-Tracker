@@ -2,6 +2,7 @@ package gg.paceman.aatracker.gui;
 
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,13 +10,16 @@ import java.awt.*;
 public class AATrackerPanel {
     private JPanel mainPanel;
     private JPanel trackerPanel;
+    private AATrackerGUI gui;
 
-    public static JPanel getPanel() {
-        return new AATrackerPanel().mainPanel;
+    public static Pair<AATrackerGUI, JPanel> getNewGUIAsPanel() {
+        AATrackerPanel aaTrackerPanel = new AATrackerPanel();
+        return Pair.of(aaTrackerPanel.gui, aaTrackerPanel.trackerPanel);
     }
 
     private void createUIComponents() {
-        this.trackerPanel = AATrackerGUI.getJinglePanel();
+        this.gui = AATrackerGUI.getHeadless();
+        this.trackerPanel = this.gui.getMainPanel();
     }
 
     {
