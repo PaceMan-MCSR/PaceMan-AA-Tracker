@@ -362,11 +362,29 @@ public class AATracker {
         boolean hasEnchantedGoldenApple = advancements.has(EGA_ADVANCEMENT) && advancements.getAsJsonObject(EGA_ADVANCEMENT).has("complete") && advancements.getAsJsonObject(EGA_ADVANCEMENT).get("complete").getAsBoolean();
         aaItems.addProperty("has_enchanted_golden_apple", hasEnchantedGoldenApple);
 
+        Optional<JsonObject> aps = getAnyPlayerStats(record);
+
         aaItems.addProperty("skulls", 0);
-        getAnyPlayerStats(record).ifPresent(playerStats -> aaItems.addProperty("skulls",
-                getItemStat(playerStats, "minecraft:picked_up", "minecraft:wither_skeleton_skull") -
+        aps.ifPresent(playerStats -> aaItems.addProperty("skulls",
+                Math.max(0, getItemStat(playerStats, "minecraft:picked_up", "minecraft:wither_skeleton_skull") -
                         getItemStat(playerStats, "minecraft:dropped", "minecraft:wither_skeleton_skull") -
-                        getItemStat(playerStats, "minecraft:used", "minecraft:wither_skeleton_skull")
+                        getItemStat(playerStats, "minecraft:used", "minecraft:wither_skeleton_skull"))
+        ));
+
+        aaItems.addProperty("ancient_debris", 0);
+        aps.ifPresent(playerStats -> aaItems.addProperty("ancient_debris",
+                Math.max(0, getItemStat(playerStats, "minecraft:picked_up", "minecraft:ancient_debris") -
+                        getItemStat(playerStats, "minecraft:dropped", "minecraft:ancient_debris") -
+                        getItemStat(playerStats, "minecraft:used", "minecraft:ancient_debris"))
+        ));
+
+        aaItems.addProperty("gold_blocks", 0);
+        aps.ifPresent(playerStats -> aaItems.addProperty("gold_blocks",
+                Math.max(0, getItemStat(playerStats, "minecraft:crafted", "minecraft:gold_block") +
+                        getItemStat(playerStats, "minecraft:picked_up", "minecraft:gold_block") -
+                        getItemStat(playerStats, "minecraft:dropped", "minecraft:gold_block") -
+                        getItemStat(playerStats, "minecraft:used", "minecraft:gold_block") -
+                        (getItemStat(playerStats, "minecraft:crafted", "minecraft:gold_ingot") / 9))
         ));
 
         JsonObject toSend = new JsonObject();
